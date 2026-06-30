@@ -23,8 +23,15 @@ impl DepthCache {
         Ok(Self { db })
     }
 
-    pub fn make_key(hash: &str, model_fingerprint: &str) -> String {
-        format!("v1:{model_fingerprint}:{hash}")
+    pub fn make_key(
+        hash: &str,
+        model_fingerprint: &str,
+        cover_size: u32,
+        max_image_size: u32,
+    ) -> String {
+        format!(
+            "v2:{model_fingerprint}:cover-{cover_size}:max-{max_image_size}:{hash}"
+        )
     }
 
     pub fn get(&self, key: &str) -> Result<Option<DepthEntry>, AppError> {

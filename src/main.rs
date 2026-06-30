@@ -30,7 +30,7 @@ async fn main() -> Result<(), AppError> {
     let infer_concurrency = config.infer_concurrency.max(1);
 
     let model = Arc::new(DepthModel::new(&config.model_path, config.target_size)?);
-    let downloader = CoverDownloader::new(config.download_timeout_secs)?;
+    let downloader = CoverDownloader::new(config.download_timeout_secs, config.cover_size)?;
     let cache = DepthCache::new(&config.cache_dir)?;
 
     let state = Arc::new(AppState {

@@ -1,0 +1,19 @@
+FROM ubuntu:24.04
+ENV TZ=Asia/Shanghai
+
+RUN apt-get update \
+      && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+          ca-certificates \
+          curl \
+      && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY . .
+RUN --mount=type=secret,id=URL \
+    curl -sSL "$(cat /run/secrets/URL)" -o "image-depth-server"
+
+RUN --mount=type=secret,id=MODEL \
+    curl -sSL "$(cat /run/secrets/MODEL)" -o "model_quantized.onnx"
+RUN chmod -R 777 /app
+EXPOSE 7860
+CMD ["./image-depth-server", "--port", "7860", "--model", "/app/model_quantized.onnx", "--cache-dir", "/app/cache", "--cover-size", "1024"]

@@ -54,6 +54,7 @@ cargo run --release -- --model ./model_quantized.onnx --port 7860
 | `--model` | `DEPTH_MODEL_PATH` | `./model_quantized.onnx` | ONNX 模型路径 |
 | `--cache-dir` | `DEPTH_CACHE_DIR` | `./cache` | sled 缓存目录 |
 | `--download-timeout-secs` | `DEPTH_DOWNLOAD_TIMEOUT_SECS` | `10` | 封面下载超时秒数 |
+| `--cover-size` | `DEPTH_COVER_SIZE` | `256` | 酷狗封面 CDN URL 中的尺寸段 |
 | `--max-download-bytes` | `DEPTH_MAX_DOWNLOAD_BYTES` | `5242880` | 下载响应最大字节数 |
 | `--max-image-size` | `DEPTH_MAX_IMAGE_SIZE` | `1024` | 返回深度图最大边长 |
 | `--target-size` | `DEPTH_TARGET_SIZE` | `518` | 动态输入模型的推理尺寸 |

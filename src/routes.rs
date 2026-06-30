@@ -36,7 +36,12 @@ pub async fn get_depth(
         )));
     }
 
-    let cache_key = DepthCache::make_key(&hash, state.model.cache_fingerprint());
+    let cache_key = DepthCache::make_key(
+        &hash,
+        state.model.cache_fingerprint(),
+        state.config.cover_size,
+        state.config.max_image_size,
+    );
     if let Some(entry) = state.cache.get(&cache_key)? {
         return Ok(Json(entry));
     }

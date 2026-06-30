@@ -6,22 +6,26 @@ use crate::error::AppError;
 
 pub struct CoverDownloader {
     client: reqwest::Client,
+    cover_size: u32,
 }
 
 impl CoverDownloader {
-    pub fn new(timeout_secs: u64) -> Result<Self, AppError> {
+    pub fn new(timeout_secs: u64, cover_size: u32) -> Result<Self, AppError> {
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(timeout_secs))
             .user_agent("image-depth-server/0.1")
             .build()
             .map_err(|e| AppError::Internal(format!("HTTP 客户端创建失败: {e}")))?;
 
-        Ok(Self { client })
+        Ok(Self { client, cover_size })
     }
 
     pub async fn download_cover(&self, hash: &str, max_bytes: usize) -> Result<Vec<u8>, AppError> {
         let prefix = &hash[..8];
-        let url = format!("https://imge.kugou.com/stdmusic/256/{prefix}/{hash}.jpg");
+        let url = format!(
+            "https://imge.kugou.com/stdmusic/{}/{prefix}/{hash}.jpg",
+            self.cover_size
+        );
 
         let resp = self
             .client

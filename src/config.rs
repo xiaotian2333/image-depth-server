@@ -21,6 +21,9 @@ pub struct Config {
     #[arg(long, env = "DEPTH_DOWNLOAD_TIMEOUT_SECS", default_value_t = 10)]
     pub download_timeout_secs: u64,
 
+    #[arg(long, env = "DEPTH_COVER_SIZE", default_value_t = 256)]
+    pub cover_size: u32,
+
     #[arg(long, env = "DEPTH_MAX_DOWNLOAD_BYTES", default_value_t = 5 * 1024 * 1024)]
     pub max_download_bytes: usize,
 
@@ -45,6 +48,9 @@ impl Config {
     pub fn validate(self) -> Result<Self, AppError> {
         if self.download_timeout_secs == 0 {
             return Err(AppError::Internal("下载超时时间必须大于 0".into()));
+        }
+        if self.cover_size == 0 {
+            return Err(AppError::Internal("封面尺寸必须大于 0".into()));
         }
         if self.max_download_bytes == 0 {
             return Err(AppError::Internal("下载大小限制必须大于 0".into()));
