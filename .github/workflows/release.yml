@@ -1,0 +1,215 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  BIN_NAME: image-depth-server
+  CARGO_TERM_COLOR: always
+
+jobs:
+  changelog:
+    name: 生成更新日志
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.meta.outputs.tag_name }}
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 生成 Release Notes
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tag_name="${GITHUB_REF_NAME}"
+          echo "tag_name=${tag_name}" >> "${GITHUB_OUTPUT}"
+
+          tag_commit="$(git rev-list -n 1 "${tag_name}")"
+          previous_tag="$(git describe --tags --match 'v*' --abbrev=0 "${tag_commit}^" 2>/dev/null || true)"
+          if [[ -n "${previous_tag}" ]]; then
+            log_range="${previous_tag}..${tag_name}"
+            compare_text="范围：${previous_tag}...${tag_name}"
+          else
+            log_range="${tag_name}"
+            compare_text="范围：仓库初始提交...${tag_name}"
+          fi
+
+          mapfile -t commits < <(git log --no-merges --format='%s' "${log_range}" || true)
+
+          {
+            echo "## image-depth-server ${tag_name}"
+            echo
+            echo "${compare_text}"
+            echo
+          } > release-notes.md
+
+          if [[ "${#commits[@]}" -eq 0 ]]; then
+            {
+              echo "### 更新内容"
+              echo
+              echo "- 未检测到新的非合并提交标题。"
+              echo
+            } >> release-notes.md
+          else
+            declare -a added fixed docs ops other
+
+            for title in "${commits[@]}"; do
+              clean_title="$(echo "${title}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+              case "${clean_title}" in
+                feat:*|feat\(*\):*|feature:*|Feature:*)
+                  added+=("${clean_title}")
+                  ;;
+                fix:*|fix\(*\):*|bugfix:*|Bugfix:*)
+                  fixed+=("${clean_title}")
+                  ;;
+                docs:*|docs\(*\):*)
+                  docs+=("${clean_title}")
+                  ;;
+                build:*|build\(*\):*|ci:*|ci\(*\):*|chore:*|chore\(*\):*|refactor:*|refactor\(*\):*|perf:*|perf\(*\):*)
+                  ops+=("${clean_title}")
+                  ;;
+                *)
+                  other+=("${clean_title}")
+                  ;;
+              esac
+            done
+
+            write_section() {
+              local heading="$1"
+              shift
+              local items=("$@")
+              if [[ "${#items[@]}" -eq 0 ]]; then
+                return
+              fi
+
+              {
+                echo "### ${heading}"
+                echo
+                for item in "${items[@]}"; do
+                  echo "- ${item}"
+                done
+                echo
+              } >> release-notes.md
+            }
+
+            write_section "新增" "${added[@]}"
+            write_section "修复" "${fixed[@]}"
+            write_section "文档" "${docs[@]}"
+            write_section "工程与优化" "${ops[@]}"
+            write_section "其他更新" "${other[@]}"
+          fi
+
+          {
+            echo "### 构建产物"
+            echo
+            echo "- image-depth-server-linux-x64"
+            echo "- image-depth-server-windows-x64.exe"
+          } >> release-notes.md
+
+      - name: 上传更新日志
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release-notes.md
+          if-no-files-found: error
+
+  build:
+    name: 构建 ${{ matrix.label }}
+    needs: changelog
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: linux-x64
+            os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            binary: image-depth-server
+            asset: image-depth-server-linux-x64
+          - label: windows-x64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            binary: image-depth-server.exe
+            asset: image-depth-server-windows-x64.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: 编译 release
+        run: cargo build --release --locked --target ${{ matrix.target }} --bin ${{ env.BIN_NAME }}
+
+      - name: 准备 Linux x64 可执行文件
+        if: matrix.label == 'linux-x64'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp "target/${{ matrix.target }}/release/${{ matrix.binary }}" "dist/${{ matrix.asset }}"
+
+      - name: 准备 Windows x64 可执行文件
+        if: matrix.label == 'windows-x64'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "dist" | Out-Null
+          Copy-Item -LiteralPath "target\${{ matrix.target }}\release\${{ matrix.binary }}" -Destination "dist\${{ matrix.asset }}"
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-asset-${{ matrix.label }}
+          path: dist/${{ matrix.asset }}
+          if-no-files-found: error
+
+  release:
+    name: 创建 GitHub Release
+    runs-on: ubuntu-latest
+    needs:
+      - changelog
+      - build
+    steps:
+      - name: 下载更新日志
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+          path: .
+
+      - name: 下载构建产物
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-asset-*
+          path: dist
+          merge-multiple: true
+
+      - name: 创建或更新 Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ needs.changelog.outputs.tag_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if gh release view "${TAG_NAME}" >/dev/null 2>&1; then
+            gh release upload "${TAG_NAME}" dist/* --clobber
+            gh release edit "${TAG_NAME}" \
+              --title "image-depth-server ${TAG_NAME}" \
+              --notes-file release-notes.md
+          else
+            gh release create "${TAG_NAME}" dist/* \
+              --verify-tag \
+              --title "image-depth-server ${TAG_NAME}" \
+              --notes-file release-notes.md
+          fi
