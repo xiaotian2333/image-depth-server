@@ -314,28 +314,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0a5c400df2834b80a4c3327b3aad3a4c4cd4de0629063962b03235697506a28"
 
 [[package]]
-name = "image-depth-server"
-version = "0.1.0"
-dependencies = [
- "axum",
- "base64",
- "chrono",
- "clap",
- "futures-util",
- "image",
- "ndarray",
- "ort",
- "reqwest",
- "serde",
- "serde_json",
- "sled",
- "tokio",
- "tower-http",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "der"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -795,6 +773,28 @@ dependencies = [
  "png",
  "zune-core",
  "zune-jpeg",
+]
+
+[[package]]
+name = "image-depth-server"
+version = "0.1.1"
+dependencies = [
+ "axum",
+ "base64",
+ "chrono",
+ "clap",
+ "futures-util",
+ "image",
+ "ndarray",
+ "ort",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sled",
+ "tokio",
+ "tower-http",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]

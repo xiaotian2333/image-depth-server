@@ -16,4 +16,4 @@ RUN --mount=type=secret,id=MODEL \
     curl -sSL "$(cat /run/secrets/MODEL)" -o "model_quantized.onnx"
 RUN chmod -R 777 /app
 EXPOSE 7860
-CMD ["./image-depth-server", "--port", "7860", "--model", "/app/model_quantized.onnx", "--cache-dir", "/app/cache", "--cover-size", "1024"]
+CMD ["./image-depth-server", "--port", "7860", "--model", "/app/model_quantized.onnx", "--cache-dir", "/app/cache", "--cover-size", "1024", "--target-size", "1024", "--infer-concurrency", "20"]
