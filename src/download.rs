@@ -12,7 +12,7 @@ impl CoverDownloader {
     pub fn new(timeout_secs: u64) -> Result<Self, AppError> {
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(timeout_secs))
-            .user_agent("EchoMusic-DepthServer/0.1")
+            .user_agent("image-depth-server/0.1")
             .build()
             .map_err(|e| AppError::Internal(format!("HTTP 客户端创建失败: {e}")))?;
 

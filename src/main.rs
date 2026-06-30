@@ -22,7 +22,7 @@ use tower_http::{cors::CorsLayer, trace::TraceLayer};
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
     tracing_subscriber::fmt()
-        .with_env_filter("depth_server=info,tower_http=info")
+        .with_env_filter("image_depth_server=info,tower_http=info")
         .init();
 
     let config = Config::from_env().validate()?;
@@ -49,7 +49,7 @@ async fn main() -> Result<(), AppError> {
         .with_state(state);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
-    tracing::info!("depth-server 启动于 {addr}");
+    tracing::info!("image-depth-server 启动于 {addr}");
 
     let listener = tokio::net::TcpListener::bind(addr)
         .await

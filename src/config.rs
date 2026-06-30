@@ -3,7 +3,7 @@ use clap::Parser;
 use crate::error::AppError;
 
 #[derive(Parser, Debug, Clone)]
-#[command(name = "depth-server")]
+#[command(name = "image-depth-server")]
 pub struct Config {
     #[arg(long, env = "DEPTH_PORT", default_value_t = 7860)]
     pub port: u16,
